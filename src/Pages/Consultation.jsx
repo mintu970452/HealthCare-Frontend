@@ -28,7 +28,7 @@ function Consultation() {
 
       try {
         const response = await fetch(
-          'http://localhost:8080/api/appointments/doctor',
+          'https://smarthealth-backend-9tf6.onrender.com/api/appointments/doctor',
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -117,7 +117,7 @@ function Consultation() {
 
     try {
       const response = await fetch(
-        'http://localhost:8080/api/consultations',
+        'https://smarthealth-backend-9tf6.onrender.com/api/consultations',
         {
           method: 'POST',
           headers: {
@@ -152,7 +152,7 @@ function Consultation() {
       setMessage('Consultation saved. Completing appointment...')
 
       const completeResponse = await fetch(
-        `http://localhost:8080/api/appointments/${appointmentId}/complete`,
+        `https://smarthealth-backend-9tf6.onrender.com/api/appointments/${appointmentId}/complete`,
         {
           method: 'PUT',
           headers: {

@@ -21,7 +21,7 @@ function DoctorDashboard() {
 
       try {
         const response = await fetch(
-          'http://localhost:8080/api/appointments/doctor',
+          'https://smarthealth-backend-9tf6.onrender.com/api/appointments/doctor',
           {
             method: 'GET',
             headers: {
@@ -60,7 +60,7 @@ function DoctorDashboard() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/appointments/${id}/${status}`,
+        `https://smarthealth-backend-9tf6.onrender.com/api/appointments/${id}/${status}`,
         {
           method: 'PUT',
           headers: {

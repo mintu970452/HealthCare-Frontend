@@ -21,7 +21,7 @@ function MyConsultations() {
 
       try {
         const response = await fetch(
-          'http://localhost:8080/api/consultations/patient',
+          'https://smarthealth-backend-9tf6.onrender.com/api/consultations/patient',
           {
             headers: {
               Authorization: `Bearer ${token}`

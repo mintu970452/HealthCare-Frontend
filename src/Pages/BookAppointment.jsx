@@ -21,7 +21,7 @@ function BookAppointment() {
   useEffect(() => {
     const token = localStorage.getItem('token')
 
-    fetch('http://localhost:8080/api/doctors', {
+    fetch('https://smarthealth-backend-9tf6.onrender.com/api/doctors', {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -153,7 +153,7 @@ function BookAppointment() {
 
     try {
       const response = await fetch(
-        'http://localhost:8080/api/appointments',
+        'https://smarthealth-backend-9tf6.onrender.com/api/appointments',
         {
           method: 'POST',
           headers: {

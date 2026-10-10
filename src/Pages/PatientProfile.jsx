@@ -18,7 +18,7 @@ function PatientProfile() {
       return
     }
 
-    fetch('http://localhost:8080/api/users/me', {
+    fetch('https://smarthealth-backend-9tf6.onrender.com/api/users/me', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`

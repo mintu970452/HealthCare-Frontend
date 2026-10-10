@@ -49,7 +49,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        'http://localhost:8080/api/users/register',
+        'https://smarthealth-backend-9tf6.onrender.com/api/users/register',
         {
           method: 'POST',
           headers: {

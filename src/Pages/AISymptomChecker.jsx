@@ -27,7 +27,7 @@ function AISymptomChecker() {
       const token = localStorage.getItem('token')
 
       const response = await fetch(
-        'http://localhost:8080/api/ai/symptoms',
+        'https://smarthealth-backend-9tf6.onrender.com/api/ai/symptoms',
         {
           method: 'POST',
           headers: {
