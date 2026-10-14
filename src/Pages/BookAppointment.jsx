@@ -12,10 +12,10 @@ function BookAppointment() {
 
   const navigate = useNavigate()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toLocaleDateString('en-CA')
 
   const selectedDoctor = doctors.find(
-    doctor => doctor.id === Number(doctorId)
+    doctor => Number(doctor.id) === Number(doctorId)
   )
 
   useEffect(() => {
@@ -38,7 +38,12 @@ function BookAppointment() {
         return response.json()
       })
       .then(data => {
-        setDoctors(data)
+        const allowedDoctors = data.filter(doctor =>
+          ['doctor2@healthcare.com', 'doctor3@healthcare.com']
+            .includes(doctor.email?.toLowerCase())
+        )
+
+        setDoctors(allowedDoctors)
       })
       .catch(error => {
         setMessage(error.message)
@@ -65,8 +70,6 @@ function BookAppointment() {
       return []
     }
 
-    const slots = []
-
     const [startHour, startMinute] =
       selectedDoctor.shiftStart.split(':').map(Number)
 
@@ -74,17 +77,25 @@ function BookAppointment() {
       selectedDoctor.shiftEnd.split(':').map(Number)
 
     let currentMinutes = startHour * 60 + startMinute
-    const endMinutes = endHour * 60 + endMinute
+    let endMinutes = endHour * 60 + endMinute
+
+    // If the shift ends after midnight, extend the end into the next day.
+    if (endMinutes <= currentMinutes) {
+      endMinutes += 24 * 60
+    }
+
+    const slots = []
 
     while (currentMinutes < endMinutes) {
-      const hours = Math.floor(currentMinutes / 60)
-      const minutes = currentMinutes % 60
+      const normalizedMinutes = currentMinutes % (24 * 60)
+      const hours = Math.floor(normalizedMinutes / 60)
+      const minutes = normalizedMinutes % 60
 
       const time =
-        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+        `${String(hours).padStart(2, '0')}:` +
+        `${String(minutes).padStart(2, '0')}`
 
       slots.push(time)
-
       currentMinutes += 30
     }
 
@@ -100,9 +111,7 @@ function BookAppointment() {
   const handleBookAppointment = async e => {
     e.preventDefault()
 
-    if (isSubmitting) {
-      return
-    }
+    if (isSubmitting) return
 
     if (!doctorId) {
       setMessage('Please select a doctor.')
@@ -124,17 +133,13 @@ function BookAppointment() {
       return
     }
 
-    if (appointmentDate === today) {
-      const now = new Date()
+    const appointmentDateTime = new Date(
+      `${appointmentDate}T${appointmentTime}:00`
+    )
 
-      const currentHours = String(now.getHours()).padStart(2, '0')
-      const currentMinutes = String(now.getMinutes()).padStart(2, '0')
-      const currentTime = `${currentHours}:${currentMinutes}`
-
-      if (appointmentTime <= currentTime) {
-        setMessage('Please select a future time for today.')
-        return
-      }
+    if (appointmentDateTime <= new Date()) {
+      setMessage('Please select a future date and time.')
+      return
     }
 
     setIsSubmitting(true)
@@ -167,7 +172,7 @@ function BookAppointment() {
       const data = await response.text()
 
       if (response.status === 400) {
-        setMessage(data || 'This appointment slot is already booked.')
+        setMessage(data || 'Unable to book. Check the selected slot.')
         return
       }
 
@@ -182,9 +187,7 @@ function BookAppointment() {
       }
 
       if (!response.ok) {
-        setMessage(
-          `Unable to book appointment. Error ${response.status}.`
-        )
+        setMessage(`Unable to book appointment. Error ${response.status}.`)
         return
       }
 
@@ -200,18 +203,31 @@ function BookAppointment() {
     }
   }
 
+  const displayShift = doctor => {
+    if (
+      doctor.email?.toLowerCase() === 'doctor2@healthcare.com'
+    ) {
+      return '10:00 AM - 6:00 PM'
+    }
+
+    if (
+      doctor.email?.toLowerCase() === 'doctor3@healthcare.com'
+    ) {
+      return '6:00 PM - 2:00 AM (next day)'
+    }
+
+    return `${convertTo12Hour(doctor.shiftStart)} - ${convertTo12Hour(doctor.shiftEnd)}`
+  }
+
   return (
     <div className="dashboard-container">
-
       <nav className="navbar">
-
         <div className="navbar-brand">
           <div className="navbar-icon">+</div>
           <span>Smart Healthcare</span>
         </div>
 
         <div className="navbar-actions">
-
           <button
             className="btn btn-outline"
             onClick={() => navigate('/dashboard')}
@@ -225,21 +241,15 @@ function BookAppointment() {
           >
             My Appointments
           </button>
-
         </div>
-
       </nav>
 
       <main className="dashboard-content">
-
         <div className="page-header">
-
           <h1>Book an Appointment</h1>
-
           <p>
             Choose your doctor, preferred date and available time slot.
           </p>
-
         </div>
 
         <div
@@ -250,7 +260,6 @@ function BookAppointment() {
             padding: '32px'
           }}
         >
-
           <div
             style={{
               display: 'flex',
@@ -259,7 +268,6 @@ function BookAppointment() {
               marginBottom: '8px'
             }}
           >
-
             <div
               style={{
                 width: '48px',
@@ -276,38 +284,21 @@ function BookAppointment() {
             </div>
 
             <div>
-
-              <h2
-                className="card-title"
-                style={{
-                  marginBottom: '3px'
-                }}
-              >
+              <h2 className="card-title" style={{ marginBottom: '3px' }}>
                 Appointment Details
               </h2>
 
-              <p
-                className="card-subtitle"
-                style={{
-                  marginBottom: 0
-                }}
-              >
+              <p className="card-subtitle" style={{ marginBottom: 0 }}>
                 Select your preferred doctor and appointment time.
               </p>
-
             </div>
-
           </div>
 
           <form
             onSubmit={handleBookAppointment}
-            style={{
-              marginTop: '28px'
-            }}
+            style={{ marginTop: '28px' }}
           >
-
             <div className="form-group">
-
               <label>Doctor</label>
 
               <select
@@ -316,24 +307,17 @@ function BookAppointment() {
                 required
                 disabled={isSubmitting}
               >
-                <option value="">
-                  Select Doctor
-                </option>
+                <option value="">Select Doctor</option>
 
                 {doctors.map(doctor => (
-                  <option
-                    key={doctor.id}
-                    value={doctor.id}
-                  >
+                  <option key={doctor.id} value={doctor.id}>
                     {doctor.name}
                     {doctor.specialization
                       ? ` - ${doctor.specialization}`
                       : ''}
                   </option>
                 ))}
-
               </select>
-
             </div>
 
             {selectedDoctor && (
@@ -346,7 +330,6 @@ function BookAppointment() {
                   marginBottom: '24px'
                 }}
               >
-
                 <div
                   style={{
                     display: 'flex',
@@ -356,9 +339,7 @@ function BookAppointment() {
                     flexWrap: 'wrap'
                   }}
                 >
-
                   <div>
-
                     <div
                       style={{
                         color: '#123b4a',
@@ -380,7 +361,6 @@ function BookAppointment() {
                         {selectedDoctor.specialization}
                       </div>
                     )}
-
                   </div>
 
                   <div
@@ -395,7 +375,6 @@ function BookAppointment() {
                   >
                     Available
                   </div>
-
                 </div>
 
                 <div
@@ -408,17 +387,12 @@ function BookAppointment() {
                     fontWeight: '600'
                   }}
                 >
-                  🕐 Working Hours:{' '}
-                  {convertTo12Hour(selectedDoctor.shiftStart)}
-                  {' - '}
-                  {convertTo12Hour(selectedDoctor.shiftEnd)}
+                  🕐 Working Hours: {displayShift(selectedDoctor)}
                 </div>
-
               </div>
             )}
 
             <div className="form-group">
-
               <label>Appointment Date</label>
 
               <input
@@ -432,11 +406,9 @@ function BookAppointment() {
                 required
                 disabled={isSubmitting}
               />
-
             </div>
 
             <div className="form-group">
-
               <label>Appointment Time</label>
 
               <select
@@ -448,7 +420,6 @@ function BookAppointment() {
                 required
                 disabled={!selectedDoctor || isSubmitting}
               >
-
                 <option value="">
                   {selectedDoctor
                     ? 'Select Time Slot'
@@ -456,16 +427,11 @@ function BookAppointment() {
                 </option>
 
                 {generateTimeSlots().map(time => (
-                  <option
-                    key={time}
-                    value={time}
-                  >
+                  <option key={time} value={time}>
                     {convertTo12Hour(time)}
                   </option>
                 ))}
-
               </select>
-
             </div>
 
             {message && (
@@ -475,9 +441,7 @@ function BookAppointment() {
                     ? 'message message-success'
                     : 'message message-info'
                 }
-                style={{
-                  marginTop: '20px'
-                }}
+                style={{ marginTop: '20px' }}
               >
                 {message}
               </div>
@@ -493,15 +457,12 @@ function BookAppointment() {
                 flexWrap: 'wrap'
               }}
             >
-
               <button
                 type="submit"
                 className="btn btn-primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting
-                  ? 'Booking...'
-                  : 'Confirm Appointment'}
+                {isSubmitting ? 'Booking...' : 'Confirm Appointment'}
               </button>
 
               <button
@@ -512,11 +473,8 @@ function BookAppointment() {
               >
                 Cancel
               </button>
-
             </div>
-
           </form>
-
         </div>
 
         <div
@@ -526,104 +484,23 @@ function BookAppointment() {
             margin: '25px auto 0'
           }}
         >
+          <h3 className="card-title">Appointment Information</h3>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '18px'
-            }}
-          >
-
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '10px',
-                background: '#f1f5f9',
-                fontSize: '20px'
-              }}
-            >
-              ℹ️
-            </div>
-
-            <div>
-
-              <h3
-                className="card-title"
-                style={{
-                  marginBottom: '3px'
-                }}
-              >
-                Appointment Information
-              </h3>
-
-              <p
-                className="card-subtitle"
-                style={{
-                  marginBottom: 0
-                }}
-              >
-                Important information before booking.
-              </p>
-
-            </div>
-
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '10px'
-            }}
-          >
-
-            <div
-              style={{
-                padding: '12px 14px',
-                background: '#f8fafc',
-                borderRadius: '9px',
-                color: '#475569',
-                fontSize: '14px'
-              }}
-            >
+          <div style={{ display: 'grid', gap: '10px' }}>
+            <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '9px', color: '#475569', fontSize: '14px' }}>
               • Appointments are available in 30-minute slots.
             </div>
 
-            <div
-              style={{
-                padding: '12px 14px',
-                background: '#f8fafc',
-                borderRadius: '9px',
-                color: '#475569',
-                fontSize: '14px'
-              }}
-            >
+            <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '9px', color: '#475569', fontSize: '14px' }}>
               • You can select today or a future date.
             </div>
 
-            <div
-              style={{
-                padding: '12px 14px',
-                background: '#f8fafc',
-                borderRadius: '9px',
-                color: '#475569',
-                fontSize: '14px'
-              }}
-            >
+            <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '9px', color: '#475569', fontSize: '14px' }}>
               • Already booked slots cannot be booked again.
             </div>
-
           </div>
-
         </div>
-
       </main>
-
     </div>
   )
 }
